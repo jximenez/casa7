@@ -136,7 +136,7 @@ header{padding:15px 22px;background:#f7f4ef;color:#342f29}header h1{color:#705b4
         <div class="sublabel">Sótano</div><div class="chips" id="fchips-sotano"></div>
         <div class="sublabel">Terraza y jardín</div><div class="chips" id="fchips-ext"></div>
         <div class="btns"><button class="btn" id="furnAll" type="button">Poner todo</button><button class="btn" id="furnNone" type="button">Quitar todo</button></div>
-        <p class="note">Cada chip pone o quita un conjunto de muebles. Hay dos pares de alternativas que se excluyen: los sofás del salón (2 plazas en L o 3 plazas con sillón) y la esquina de la nevera (3 junto a la barra, 2 al final de la encimera).</p>
+        <p class="note">Cada chip pone o quita un conjunto de muebles. Hay varias alternativas que se excluyen: los sofás del salón, la esquina de la nevera y el intercambio de salón y comedor, que mueve las dos zonas a la vez.</p>
       </div>
       <div class="group">
         <div class="label">Opciones</div>
@@ -1583,6 +1583,13 @@ const FURNITURE = [
   ['baja','hyltarp',[852.25,465,887.4,552.68],{back:'e',g:'salon3'}],
   ['baja','hyltarp',[820,426,852,458],{back:'n',g:'salon3'}], ['baja','sidetable',[864,427,884,447],{g:'salon3'}],
   ['baja','coffee',[811,484,835,520],{g:'salon3'}],
+  // alternativa: salón y comedor intercambiados de sitio
+  ['baja','table',[827.5,463,859.3,529.5],{g:'intercambio'}],
+  ['baja','chair',[814.5,470,826.5,485],{back:'w',g:'intercambio'}], ['baja','chair',[814.5,488.5,826.5,503.5],{back:'w',g:'intercambio'}], ['baja','chair',[814.5,507,826.5,522],{back:'w',g:'intercambio'}],
+  ['baja','chair',[860.3,470,872.3,485],{back:'e',g:'intercambio'}], ['baja','chair',[860.3,488.5,872.3,503.5],{back:'e',g:'intercambio'}], ['baja','chair',[860.3,507,872.3,522],{back:'e',g:'intercambio'}],
+  ['baja','hyltarp',[679.4,425,714.6,512.7],{back:'w',g:'intercambio'}],          // sofá de 3 plazas contra la medianera
+  ['baja','coffee',[732,450,762,486],{g:'intercambio'}],                          // mesa central
+  ['baja','hyltarp',[731,412,763,444],{back:'n',g:'intercambio'}], ['baja','hyltarp',[731,492,763,524],{back:'s',g:'intercambio'}],   // dos sillones enfrentados
   ['baja','wc',[859,216.5,877,241.4],{wall:'n',g:'aseo'}], ['baja','basin',[856.1,283,879.6,301],{wall:'s',g:'aseo'}],
   // planta primera · dormitorios y baños
   ['primera','bed',[815.6,178.7,886.2,216.5],{head:'e',g:'camas'}], ['primera','bed',[815.6,233,886.2,271.8],{head:'e',g:'camas'}], ['primera','nightstand',[872.4,216.5,886.2,233],{g:'camas'}],
@@ -1945,8 +1952,11 @@ const ceramic=new THREE.MeshStandardMaterial({color:0xe3d3bc,roughness:.4});
 function plant(group,x,z,base=0){const pot=new THREE.Mesh(new THREE.CylinderGeometry(.21,.15,.38,24),ceramic);pot.position.set(mx(x),base+.19,mz(z));pot.castShadow=true;group.add(pot);
  const leaf=new THREE.MeshStandardMaterial({color:0x526c3b,roughness:.85});for(let i=0;i<12;i++){const a=i*2.4;const m=ellipsoid(group,x+Math.cos(a)*6,base+.4+i*.045,z+Math.sin(a)*6,.07,.30,.055,leaf);m.rotation.z=Math.sin(a)*.65;m.rotation.x=Math.cos(a)*.65}}
 plant(fgroup('baja','salon'),876,548);plant(G.ext,757,545);
-ellipsoid(fgroup('baja','deco'),822,.485,514,.14,.085,.14,ceramic);
-for(let i=0;i<3;i++)addRect(fgroup('baja','deco'),[816,503,828,510],.40+i*.035,.03,new THREE.MeshStandardMaterial({color:[0xa18b6c,0xe4ddcf,0x626c60][i]}));
+for(const gg of ['salon','salon3']){ellipsoid(fgroup('baja',gg),822,.485,514,.14,.085,.14,ceramic);
+for(let i=0;i<3;i++)addRect(fgroup('baja',gg),[816,503,828,510],.40+i*.035,.03,new THREE.MeshStandardMaterial({color:[0xa18b6c,0xe4ddcf,0x626c60][i]}));}
+ellipsoid(fgroup('baja','intercambio'),747,.485,468,.14,.085,.14,ceramic);
+addRect(fgroup('baja','intercambio'),[695,418,770,528],.03,.012,rug);
+ellipsoid(fgroup('baja','intercambio'),700,.62,452,.11,.23,.23,cushion);ellipsoid(fgroup('baja','intercambio'),700,.62,486,.11,.23,.24,cushion);
 // Cada estancia conserva la distribución del archivo de origen.
 const ROOMS=[
  ['Salón',830,548,1.6,835,470],['Cocina',754,345,1.6,699,285],['Comedor',761,417,1.6,719,473],
@@ -2077,17 +2087,18 @@ M.street.roughness = 1; M.street.color.set('#8a8c8e');
 
 // ---------- Panel de mobiliario: un chip por conjunto ----------
 const FURN_UI = [
-  ['baja',    [['cocina','Cocina y nevera',1],['comedor','Comedor',1],['salon','2 plazas en L',1],['salon3','3 plazas + sillón',0],['nevera3','Nevera esquina 3',1],['nevera2','Nevera esquina 2',0],['aseo','Aseo',1],['deco','Alfombra y detalles',1]]],
+  ['baja',    [['cocina','Cocina y nevera',1],['comedor','Comedor',1],['salon','2 plazas en L',1],['salon3','3 plazas + sillón',0],['intercambio','Salón ⇄ comedor',0],['nevera3','Nevera esquina 3',1],['nevera2','Nevera esquina 2',0],['aseo','Aseo',1],['deco','Alfombra y detalles',1]]],
   ['primera', [['camas','Camas',1],['armarios','Armarios',1],['banos','Baños',1],['escritorio','Escritorio',1]]],
   ['sotano',  [['sotsalon','Sofá y TV',1],['sotarmarios','Armarios pared larga',1],['juego','Cuarto de juego',1],['lavadero','Lavadero',1],['botellero','Botellero',1]]],
   ['ext',     [['mesaterraza','Mesa de 6',1],['barbacoa','Barbacoa',1],['ducha','Miniducha',1],['barandilla','Barandilla',1]]],
 ];
-const FURN_XOR = [['salon','salon3'], ['nevera3','nevera2']];   // pares de alternativas que ocupan el mismo sitio
+const FURN_XOR = [['salon','salon3'], ['nevera3','nevera2'], ['salon','intercambio'], ['salon3','intercambio'], ['comedor','intercambio']];   // pares de alternativas que ocupan el mismo sitio
 const furnInputs = {};
 function applyFurn(id, on, quiet){
   const inp = furnInputs[id]; if (!inp) return;
   inp.checked = on; inp.closest('.chip').classList.toggle('on', on); setFurn(id, on);
   if (on) for (const set of FURN_XOR) if (set.indexOf(id) >= 0) for (const other of set) if (other !== id && furnInputs[other] && furnInputs[other].checked) applyFurn(other, false, true);
+  if (id === 'intercambio' && !on && !quiet){ applyFurn('comedor', true, true); if (!furnInputs.salon3.checked) applyFurn('salon', true, true); }
   if (!quiet) showTag(inp.dataset.label + (on ? ' puesto' : ' quitado'));
 }
 for (const [floor, list] of FURN_UI){
@@ -2100,7 +2111,7 @@ for (const [floor, list] of FURN_UI){
     inp.addEventListener('change', () => applyFurn(id, inp.checked));
   }
 }
-document.getElementById('furnAll').addEventListener('click', () => { for (const id in furnInputs) if (!furnInputs[id].checked && id !== 'salon3' && id !== 'nevera2') applyFurn(id, true, true); showTag('Mobiliario completo'); });
+document.getElementById('furnAll').addEventListener('click', () => { for (const id in furnInputs) if (!furnInputs[id].checked && id !== 'salon3' && id !== 'nevera2' && id !== 'intercambio') applyFurn(id, true, true); showTag('Mobiliario completo'); });
 document.getElementById('furnNone').addEventListener('click', () => { for (const id in furnInputs) if (furnInputs[id].checked) applyFurn(id, false, true); showTag('Sin mobiliario'); });
 
 // ---------- Arranque: vista "Perspectiva" con una entrada suave de cámara ----------
